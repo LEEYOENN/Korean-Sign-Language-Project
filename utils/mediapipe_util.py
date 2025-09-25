@@ -12,8 +12,8 @@ FONT_THICKNESS = 1
 HANDEDNESS_TEXT_COLOR = (88, 205, 54)
 
 # 모델 경로 정의 (실제 경로로 수정 필요)
-HAND_MODEL_PATH = r'C:\\Potenup\\Korean-Sign-Language-Project\\src\\utils\\hand_landmarker.task'
-POSE_MODEL_PATH = r'C:\\Potenup\\Korean-Sign-Language-Project\\src\\utils\\pose_landmarker_full.task'
+HAND_MODEL_PATH = r'C:\\Potenup\\Korean-Sign-Language-Project\\utils\\landmarker_tasks\\hand_landmarker.task'
+POSE_MODEL_PATH = r'C:\\Potenup\\Korean-Sign-Language-Project\\utils\\landmarker_tasks\\pose_landmarker_full.task'
 
 def draw_landmarks_manual(image, landmarks_data, color):
     # Check if landmarks_data is a valid list
@@ -187,7 +187,7 @@ def get_landmarks_from_base64(base64_string):
     result.extend(result_landmarks['Right'])
     result.extend(result_landmarks['Face'])
 
-    return result
+    return result_landmarks
 
 if __name__ == "__main__":
     test_image_path = r'C:/Potenup/Korean-Sign-Language-Project/data/images/test.jpg'

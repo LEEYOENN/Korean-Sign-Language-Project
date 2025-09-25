@@ -3,6 +3,16 @@ import cv2
 import os 
 import csv 
 import mediapipe as mp
+import pandas as pd
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = 'C:\Potenup\Korean-Sign-Language-Project'
+sys.path.append(project_root)
+
+from utils.guide_box import draw_box
+
+# box 데이터 프레임 불러오기
+df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
 
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
 mp_hands = mp.solutions.hands
@@ -29,7 +39,8 @@ pose = mp_pose.Pose(
 
 # 저장할 데이터 설정 
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
-answer_label = '1'
+answer_label = 0 # 저장할 라벨을 적어주세요
+# s 키를 누르면 저장됩니다!
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data.csv'
 
@@ -49,6 +60,8 @@ while True:
     
     # 좌우반전
     frame = cv2.flip(frame, 1)
+
+    draw_box(frame, df, answer_label)
 
     # 그리기 설정
     frame.flags.writeable = True

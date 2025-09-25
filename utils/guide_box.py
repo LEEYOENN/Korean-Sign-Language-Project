@@ -3,7 +3,7 @@ import cv2
 import sys
 import time
 
-df = pandas.read_csv("./data/guide_box.csv")
+df = pandas.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
 
 #print(df)
 
@@ -24,29 +24,30 @@ def draw_box(frame, box_df, label):
 
     return frame
 
-label = 20
+if __name__ == "__main__":
+    label = 20
 
-vcap = cv2.VideoCapture(0)
+    vcap = cv2.VideoCapture(0)
 
-#print(grouped_df)
+    #print(grouped_df)
 
-while True:
-    ret, frame = vcap.read()
-    if not ret:
-        print("웹캠이 작동하지 않습니다.")
-        sys.exit()
+    while True:
+        ret, frame = vcap.read()
+        if not ret:
+            print("웹캠이 작동하지 않습니다.")
+            sys.exit()
 
-    # 좌우 반전
-    flipped_frame = cv2.flip(frame, 1)
+        # 좌우 반전
+        flipped_frame = cv2.flip(frame, 1)
 
 
-    frflipped_frameame = draw_box(flipped_frame, df, label)
-    cv2.imshow("webcam", flipped_frame)
+        frflipped_frameame = draw_box(flipped_frame, df, label)
+        cv2.imshow("webcam", flipped_frame)
 
-    # 꺼지는 조건
-    key = cv2.waitKey(1)
-    if key == 27:
-        break
+        # 꺼지는 조건
+        key = cv2.waitKey(1)
+        if key == 27:
+            break
 
-vcap.release()
-cv2.destroyAllWindows()
+    vcap.release()
+    cv2.destroyAllWindows()
