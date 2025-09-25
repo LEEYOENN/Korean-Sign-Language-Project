@@ -28,9 +28,9 @@ pose = mp_pose.Pose(
 )
 
 # 저장할 데이터 설정 
-######### 🚨 여기를 수정하면 됩니다! ########
+######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 answer_label = '1'
-######### 🚨 여기를 수정하면 됩니다! ########
+######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data.csv'
 
 # 파일이 없을 경우 생성
