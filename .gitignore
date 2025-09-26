@@ -1,1 +1,9 @@
 *.pyc
+
+# 
+data/sign_images/
+
+test.ipynb
+client_test.py
+client.py
+src/app/main.py
