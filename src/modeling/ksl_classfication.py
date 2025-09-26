@@ -8,7 +8,7 @@ import base64
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from utils.mediapipe_util import get_landmarks_from_base64, flatten_landmarks
 
-MODEL_PATH = 'models/lr_test_model.pkl'
+MODEL_PATH = 'models/rf_test_model.pkl'
 IMAGE_PATH = 'data/images/4_1.jpg'
 NUM_FEATURES=106
 NUM_LABELS = 11
