@@ -13,8 +13,8 @@ mp_drawing_styles = mp.solutions.drawing_styles
 hands = mp_hands.Hands(
     static_image_mode = False, #고정이미지 아님
     max_num_hands = 2,
-    min_detection_confidence = 0.4, # 감지확률 0.3 이상
-    min_tracking_confidence = 0.4 # 트래킹 확률 0.3 이상
+    min_detection_confidence = 0.3, # 감지확률 0.3 이상
+    min_tracking_confidence = 0.3 # 트래킹 확률 0.3 이상
 )
 
 vcap = cv2.VideoCapture(0)

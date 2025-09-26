@@ -3,7 +3,7 @@ import cv2
 import sys
 import time
 
-df = pandas.read_csv("C:/Users/user/potenup/Korean-Sign-Language-Project/data/guide_box.csv")
+df = pandas.read_csv("./data/guide_box.csv")
 
 #print(df)
 
@@ -25,7 +25,7 @@ def draw_box(frame, box_df, label):
     return frame
 
 if __name__ == "__main__":
-    label = 16
+    label = 19
 
     vcap = cv2.VideoCapture(0)
 
