@@ -25,7 +25,7 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 HandLandmarker = mp.tasks.vision.HandLandmarker
 HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
 
-hand_options = HandLandmarkerOptions(
+HAND_OPTIONS = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=HAND_MODEL_PATH),
     running_mode=VisionRunningMode.IMAGE,
 num_hands=2,
@@ -35,7 +35,7 @@ min_hand_presence_confidence=0.5,
 
 PoseLandmarker = mp.tasks.vision.PoseLandmarker
 PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-pose_options = PoseLandmarkerOptions(
+POSE_OPTIONS = PoseLandmarkerOptions(
     num_poses=1,
     base_options=BaseOptions(
         model_asset_path=POSE_MODEL_PATH),
@@ -101,6 +101,8 @@ def flatten_landmarks(result_landmarks: dict,
         left = [0.0] * hand_size
     if not right:
         right = [0.0] * hand_size
+    if not face:
+        face = [0.0] * face_size
 
     return left + right + face
 
@@ -112,13 +114,13 @@ def get_landmarks(image_path):
     if image is None:
         print(f"Error: Could not load image from {image_path}")
         return result_landmarks
-        
+    
     image = cv2.flip(image, 1)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
     
     # 손 랜드마커
-    with HandLandmarker.create_from_options(hand_options) as landmarker:
+    with HandLandmarker.create_from_options(HAND_OPTIONS) as landmarker:
         hand_landmarker_result = landmarker.detect(mp_image)
         
         for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
@@ -133,7 +135,43 @@ def get_landmarks(image_path):
                 result_landmarks['Right'].extend(landmarks)
 
     # 포즈 랜드마커
-    with PoseLandmarker.create_from_options(pose_options) as landmarker:
+    with PoseLandmarker.create_from_options(POSE_OPTIONS) as landmarker:
+        pose_landmarker_result = landmarker.detect(mp_image)
+        
+        desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        if pose_landmarker_result.pose_landmarks:
+            landmarks_to_save = []
+            for idx, landmark in enumerate(pose_landmarker_result.pose_landmarks[0]):
+                if idx in desired_pose_landmarks:
+                    landmarks_to_save.extend([landmark.x, landmark.y])
+            result_landmarks['Face'] = landmarks_to_save
+
+    return result_landmarks
+
+def get_landmarks_file(image):
+    result_landmarks = {"Left" : [], 'Right': [], "Face": []}
+
+    image = cv2.flip(image, 1)
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
+    
+    # 손 랜드마커
+    with HandLandmarker.create_from_options(HAND_OPTIONS) as landmarker:
+        hand_landmarker_result = landmarker.detect(mp_image)
+        
+        for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
+            landmarks = []
+            for landmark in hand_landmarks:
+                landmarks.extend([landmark.x, landmark.y])
+            
+            hand_label = handedness[0].category_name
+            if hand_label == 'Left':
+                result_landmarks['Left'].extend(landmarks)
+            elif hand_label == 'Right':
+                result_landmarks['Right'].extend(landmarks)
+
+    # 포즈 랜드마커
+    with PoseLandmarker.create_from_options(POSE_OPTIONS) as landmarker:
         pose_landmarker_result = landmarker.detect(mp_image)
         
         desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -175,7 +213,7 @@ def get_landmarks_from_base64(base64_string):
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
 
-    with HandLandmarker.create_from_options(hand_options) as landmarker:
+    with HandLandmarker.create_from_options(HAND_OPTIONS) as landmarker:
         hand_landmarker_result = landmarker.detect(mp_image)
         for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
             landmarks = []
@@ -188,7 +226,7 @@ def get_landmarks_from_base64(base64_string):
             elif hand_label == 'Right':
                 result_landmarks['Right'].extend(landmarks)
 
-    with PoseLandmarker.create_from_options(pose_options) as landmarker:
+    with PoseLandmarker.create_from_options(POSE_OPTIONS) as landmarker:
         pose_landmarker_result = landmarker.detect(mp_image)
         
         desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
