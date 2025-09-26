@@ -4,12 +4,12 @@ import os
 import csv 
 import mediapipe as mp
 import pandas as pd
-from guide_box import draw_box
 from pandas.errors import EmptyDataError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from utils import mediapipe_util
+from utils.guide_box import draw_box
 
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
 mp_hands = mp.solutions.hands
