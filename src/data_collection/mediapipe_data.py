@@ -11,9 +11,6 @@ from pandas.errors import EmptyDataError
 # project_root = 'C:\Potenup\Korean-Sign-Language-Project'
 # sys.path.append(project_root)
 
-# box 데이터 프레임 불러오기
-guide_box_df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
-sign_code_df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\sign_code.csv")
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
 mp_hands = mp.solutions.hands
 mp_pose = mp.solutions.pose
@@ -39,6 +36,13 @@ pose = mp_pose.Pose(
 
 ##############################################
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
+# box 데이터 프레임 불러오기
+guide_box_df = pd.read_csv("./data/guide_box.csv")
+sign_code_df = pd.read_csv("./data/sign_code.csv")
+
+# 저장할 이미지 갯수
+MAX_COUNT = 50
+
 # 저장할 데이터 설정 
 answer_label = 7 # 저장할 라벨을 적어주세요
 answer_text = (
@@ -47,9 +51,10 @@ answer_text = (
 )
 print("========================================")
 print(f'{answer_text} 를 저장하기 시작합니다!')
+print(f's 키를 누르면 저장됩니다!')
 print("========================================")
-# s 키를 누르면 저장됩니다!
-file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data/sign_data_{answer_label}.csv'
+
+file_path = f'./data/sign_data/sign_data_{answer_label}.csv'
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 ##############################################
 
@@ -182,6 +187,9 @@ while True:
     # 꺼지는 조건
     key = cv2.waitKey(1)
     if key == 27:
+        break
+
+    if count >= MAX_COUNT:
         break
 
 vcap.release()
