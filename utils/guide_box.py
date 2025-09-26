@@ -16,7 +16,7 @@ def draw_box(frame, box_df, label):
         x1, y1, x2, y2 = int(row["x1"]), int(row["y1"]), int(row["x2"]), int(row["y2"])
         cv2.rectangle(frame, (x1, y1), (x2, y2), (230, 220, 142), 2)
         cv2.putText(frame, str(label), (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (230, 220, 142), 2)
-    x1, y1, x2, y2 = int(face_box["x1"]), int(face_box["y1"]), int(face_box["x2"]), int(face_box["y2"])
+    x1, y1, x2, y2 = int(face_box["x1"].iloc[0]), int(face_box["y1"].iloc[0]), int(face_box["x2"].iloc[0]), int(face_box["y2"].iloc[0])
     
     # 얼굴영역 박스 표시
     cv2.rectangle(frame, (x1, y1), (x2, y2), (121, 190, 132), 2)

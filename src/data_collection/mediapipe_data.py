@@ -12,8 +12,8 @@ sys.path.append(project_root)
 from utils.guide_box import draw_box
 
 # box 데이터 프레임 불러오기
-df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
-
+guide_box_df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
+sign_code_df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\sign_code.csv")
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
 mp_hands = mp.solutions.hands
 mp_pose = mp.solutions.pose
@@ -37,12 +37,21 @@ pose = mp_pose.Pose(
     min_tracking_confidence=0.5
 )
 
+##############################################
+######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 # 저장할 데이터 설정 
-######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 answer_label = 0 # 저장할 라벨을 적어주세요
+answer_text = (
+    sign_code_df.loc[sign_code_df['label'] == answer_label, 'sign_text']
+    .squeeze() if (sign_code_df['label'] == answer_label).any() else None
+)
+print("========================================")
+print(f'{answer_text} 를 저장하기 시작합니다!')
+print("========================================")
 # s 키를 누르면 저장됩니다!
-######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data.csv'
+######### 🚨 여기를 수정하면 됩니다! 🚨 ########
+##############################################
 
 # 파일이 없을 경우 생성
 if not os.path.exists(file_path):
@@ -61,7 +70,7 @@ while True:
     # 좌우반전
     frame = cv2.flip(frame, 1)
 
-    draw_box(frame, df, answer_label)
+    draw_box(frame, guide_box_df, answer_label)
 
     # 그리기 설정
     frame.flags.writeable = True
