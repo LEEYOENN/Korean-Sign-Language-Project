@@ -7,10 +7,6 @@ import pandas as pd
 from guide_box import draw_box
 from pandas.errors import EmptyDataError
 
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# project_root = 'C:\Potenup\Korean-Sign-Language-Project'
-# sys.path.append(project_root)
-
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
 mp_hands = mp.solutions.hands
 mp_pose = mp.solutions.pose
