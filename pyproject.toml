@@ -5,11 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastapi>=0.117.1",
+    "av>=14.4.0",
+    "fastapi[all]>=0.117.1",
     "jupyter>=1.1.1",
     "mediapipe>=0.10.21",
     "numpy>=1.26.4",
     "opencv-python>=4.11.0.86",
     "pandas>=2.3.2",
     "streamlit>=1.50.0",
+    "streamlit-webrtc>=0.63.4",
+    "uvicorn>=0.37.0",
 ]
