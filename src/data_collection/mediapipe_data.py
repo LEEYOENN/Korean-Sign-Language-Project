@@ -4,12 +4,11 @@ import os
 import csv 
 import mediapipe as mp
 import pandas as pd
+from guide_box import draw_box
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = 'C:\Potenup\Korean-Sign-Language-Project'
-sys.path.append(project_root)
-
-from utils.guide_box import draw_box
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# project_root = 'C:\Potenup\Korean-Sign-Language-Project'
+# sys.path.append(project_root)
 
 # box 데이터 프레임 불러오기
 guide_box_df = pd.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
@@ -49,7 +48,7 @@ print("========================================")
 print(f'{answer_text} 를 저장하기 시작합니다!')
 print("========================================")
 # s 키를 누르면 저장됩니다!
-file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data.csv'
+file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data/sign_data_{answer_label}.csv'
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 ##############################################
 
@@ -57,6 +56,21 @@ file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data.csv'
 if not os.path.exists(file_path):
     with open(file_path, "w") as file:
         writer = csv.writer(file)
+else :
+    print("========================================")
+    print(f'{answer_text} 파일이 이미 존재합니다. 계속 진행해도 될까요? 괜찮으면 Y를 눌러주세요')
+    print(f'괜찮으면 Y / 종료하려면 N 을 눌러주세요')
+    print("========================================")
+    while True:
+        key = input("계속하려면 y, 종료하려면 n 을 입력하세요: ").strip().lower()
+        if key == "y":
+            break
+        elif key == "n":
+            exit()
+
+print("========================================")
+print(f'{answer_text} 를 저장하기를 정말 시작합니다!')
+print("========================================")
 
 vcap = cv2.VideoCapture(0)
 
