@@ -90,7 +90,7 @@ def draw_landmarks(image, landmarks_data, label, color):
 
 def flatten_landmarks(result_landmarks: dict,
                       hand_size: int = 42,
-                      face_size: int = 11) -> list:
+                      face_size: int = 22) -> list:
     left  = result_landmarks.get("Left",  [])
     right = result_landmarks.get("Right", [])
     face  = result_landmarks.get("Face",  [])
@@ -202,6 +202,62 @@ def get_landmarks_from_base64(base64_string):
 
     return result_landmarks
 
+import cv2
+import numpy as np
+from typing import Union
+
+def annotate_landmarks_image(
+    image_or_path: Union[str, np.ndarray],
+    landmarks_data: dict,
+    draw_fn,  # draw_landmarks_manual 함수를 주입하세요: draw_fn(image_rgb, points, color)
+    flip_before_draw: bool = True,
+    left_color=(0, 255, 0),
+    right_color=(255, 0, 0),
+    face_color=(0, 0, 255)
+) -> np.ndarray:    
+    # 1) 입력 이미지 로드/검증
+    if isinstance(image_or_path, str):
+        original_image = cv2.imread(image_or_path)
+    else:
+        original_image = image_or_path
+
+    if original_image is None:
+        raise ValueError("Error: Could not load the original image.")
+
+    # 2) (옵션) 좌우 반전 후 RGB 변환
+    working = cv2.flip(original_image, 1) if flip_before_draw else original_image.copy()
+    rgb_image = cv2.cvtColor(working, cv2.COLOR_BGR2RGB)
+    annotated = np.copy(rgb_image)
+
+    # 3) 안전한 리스트 변환
+    left_vals  = landmarks_data.get('Left',  []) or []
+    right_vals = landmarks_data.get('Right', []) or []
+    face_vals  = landmarks_data.get('Face',  []) or []
+
+    # 4) (x,y) 점 리스트로 변환
+    def to_points(vals):
+        return [(vals[i], vals[i+1]) for i in range(0, len(vals), 2)]
+
+    left_points  = to_points(left_vals)
+    right_points = to_points(right_vals)
+    face_points  = to_points(face_vals)
+
+    # 5) 랜드마크 그리기 (사용자 제공 draw_landmarks_manual 사용)
+    if left_points:
+        annotated = draw_fn(annotated, left_points,  left_color)
+    if right_points:
+        annotated = draw_fn(annotated, right_points, right_color)
+    if face_points:
+        annotated = draw_fn(annotated, face_points, face_color)
+
+    # 6) BGR로 되돌리고, (옵션) 다시 좌우 반전해서 원본 좌표계와 정렬
+    final_bgr = cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
+    if flip_before_draw:
+        final_bgr = cv2.flip(final_bgr, 1)
+
+    return final_bgr
+
+
 if __name__ == "__main__":
     test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\easy_test.jpg'
     result_image_path = r'./data/images/easy_test_result.jpg'
@@ -219,25 +275,13 @@ if __name__ == "__main__":
     # base64_string = base64.b64encode(buffer).decode('utf-8')
     # landmarks_data = get_landmarks_from_base64(base64_string)
     
-    # 좌우 반전
-    flipped_image = cv2.flip(original_image, 1)
-    rgb_image = cv2.cvtColor(flipped_image, cv2.COLOR_BGR2RGB)
-    annotated_image = np.copy(rgb_image)
+    result_image = annotate_landmarks_image(
+        test_image_path,
+        landmarks_data,
+        draw_fn=draw_landmarks_manual,
+        flip_before_draw=True
+    )
     
-    left_hand_points = [(landmarks_data['Left'][i], landmarks_data['Left'][i+1]) for i in range(0, len(landmarks_data['Left']), 2)]
-    # annotated_image = draw_landmarks(annotated_image, left_hand_points, "Left", (0, 255, 0))
-    annotated_image = draw_landmarks_manual(annotated_image, left_hand_points,  (0, 255, 0))
-
-    right_hand_points = [(landmarks_data['Right'][i], landmarks_data['Right'][i+1]) for i in range(0, len(landmarks_data['Right']), 2)]
-    # annotated_image = draw_landmarks(annotated_image, right_hand_points, "Right", (255, 0, 0))
-    annotated_image = draw_landmarks_manual(annotated_image, right_hand_points,  (255, 0, 0))
-
-    face_points = [(landmarks_data['Face'][i], landmarks_data['Face'][i+1]) for i in range(0, len(landmarks_data['Face']), 2)]
-    # annotated_image = draw_landmarks(annotated_image, face_points, "Face", (0, 0, 255))
-    annotated_image = draw_landmarks_manual(annotated_image, face_points,  (0, 0, 2552))
-    
-    final_bgr_image = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
-    result_image = cv2.flip(final_bgr_image, 1)
     cv2.imshow('result_image.jpg', result_image)
     cv2.imwrite(result_image_path, result_image)
     
