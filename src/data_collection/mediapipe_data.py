@@ -52,11 +52,14 @@ file_path = f'C:/Potenup/Korean-Sign-Language-Project/data/sign_data/sign_data_{
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 ##############################################
 
+count = 0
 # 파일이 없을 경우 생성
 if not os.path.exists(file_path):
     with open(file_path, "w") as file:
         writer = csv.writer(file)
 else :
+    df = pd.read_csv(file_path)
+    count = len(df)
     print("========================================")
     print(f'{answer_text} 파일이 이미 존재합니다. 계속 진행해도 될까요? 괜찮으면 Y를 눌러주세요')
     print(f'괜찮으면 Y / 종료하려면 N 을 눌러주세요')
@@ -74,7 +77,7 @@ print("========================================")
 
 vcap = cv2.VideoCapture(0)
 
-count = 0
+
 while True:
     ret, frame = vcap.read()
     if not ret:
