@@ -1,9 +1,16 @@
+import os
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"        # TF: ERROR만
+os.environ["GLOG_minloglevel"] = "3"            # glog: FATAL만
+os.environ["ABSL_LOG_SEVERITY_THRESHOLD"] = "3" # absl: FATAL만
+
 import cv2
 import mediapipe as mp
 import numpy as np
 import base64
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+import glob
 
 # 상수 정의
 MARGIN = 10 
@@ -11,9 +18,9 @@ FONT_SIZE = 1
 FONT_THICKNESS = 1
 HANDEDNESS_TEXT_COLOR = (88, 205, 54)
 
-# 모델 경로 정의 (실제 경로로 수정 필요)
-HAND_MODEL_PATH = r'C:\\Potenup\\Korean-Sign-Language-Project\\utils\\landmarker_tasks\\hand_landmarker.task'
-POSE_MODEL_PATH = r'C:\\Potenup\\Korean-Sign-Language-Project\\utils\\landmarker_tasks\\pose_landmarker_full.task'
+# 모델 경로 정의
+HAND_MODEL_PATH = r'./utils/landmarker_tasks/hand_landmarker.task'
+POSE_MODEL_PATH = r'./utils/landmarker_tasks/pose_landmarker_full.task'
 
 def draw_landmarks_manual(image, landmarks_data, color):
     # Check if landmarks_data is a valid list
@@ -60,6 +67,9 @@ def draw_landmarks(image, landmarks_data, label, color):
             solutions.drawing_styles.get_default_pose_landmarks_style())
 
     return annotated_image
+
+def flatten_landmarks(result_landmarks: dict) -> list:
+    return result_landmarks["Left"] + result_landmarks["Right"] + result_landmarks["Face"]
 
 def get_landmarks(image_path):
     result_landmarks = {"Left" : [], 'Right': [], "Face": []}
@@ -118,8 +128,19 @@ def get_landmarks(image_path):
                 if idx in desired_pose_landmarks:
                     landmarks_to_save.extend([landmark.x, landmark.y])
             result_landmarks['Face'] = landmarks_to_save
-    
+
     return result_landmarks
+
+def get_all_landmarks(folder_path):
+    results = []
+    
+    image_files = glob.glob(os.path.join(folder_path, "*.jpg")) + glob.glob(os.path.join(folder_path, "*.png"))
+    
+    for img_path in image_files:
+        landmarks = get_landmarks(img_path)
+        results.append(landmarks)
+    
+    return results
 
 def get_landmarks_from_base64(base64_string):
     result_landmarks = {"Left": [], 'Right': [], "Face": []}
@@ -181,20 +202,15 @@ def get_landmarks_from_base64(base64_string):
                 if idx in desired_pose_landmarks:
                     landmarks_to_save.extend([landmark.x, landmark.y])
             result_landmarks['Face'] = landmarks_to_save
-    
-    result = []
-    result.extend(result_landmarks['Left'])
-    result.extend(result_landmarks['Right'])
-    result.extend(result_landmarks['Face'])
 
     return result_landmarks
 
 if __name__ == "__main__":
-    test_image_path = r'C:/Potenup/Korean-Sign-Language-Project/data/images/test.jpg'
-    result_image_path = r'C:/Potenup/Korean-Sign-Language-Project/data/images/test_result.jpg'
+    test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\easy_test.jpg'
+    result_image_path = r'./data/images/easy_test_result.jpg'
     
     # TEST 1
-    # landmarks_data = get_landmarks(test_image_path)
+    landmarks_data = get_landmarks(test_image_path)
     
     original_image = cv2.imread(test_image_path)
     if original_image is None:
@@ -202,9 +218,9 @@ if __name__ == "__main__":
         exit()
 
     # TEST 2
-    _, buffer = cv2.imencode('.jpg', original_image)
-    base64_string = base64.b64encode(buffer).decode('utf-8')
-    landmarks_data = get_landmarks_from_base64(base64_string)
+    # _, buffer = cv2.imencode('.jpg', original_image)
+    # base64_string = base64.b64encode(buffer).decode('utf-8')
+    # landmarks_data = get_landmarks_from_base64(base64_string)
     
     # 좌우 반전
     flipped_image = cv2.flip(original_image, 1)
