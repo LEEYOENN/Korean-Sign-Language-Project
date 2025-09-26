@@ -3,7 +3,10 @@ import cv2
 import mediapipe as mp
 import pandas as pd
 import os
-from guide_box import draw_box
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from utils.guide_box import draw_box
 
 ##############################################
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########

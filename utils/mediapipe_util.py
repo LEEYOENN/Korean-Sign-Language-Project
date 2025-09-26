@@ -6,6 +6,7 @@ import base64
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 import glob
+from typing import Union
 
 # 상수 정의
 MARGIN = 10 
@@ -100,8 +101,6 @@ def flatten_landmarks(result_landmarks: dict,
         left = [0.0] * hand_size
     if not right:
         right = [0.0] * hand_size
-    if not face:
-        face = [0.0] * face_size
 
     return left + right + face
 
@@ -202,14 +201,9 @@ def get_landmarks_from_base64(base64_string):
 
     return result_landmarks
 
-import cv2
-import numpy as np
-from typing import Union
-
 def annotate_landmarks_image(
     image_or_path: Union[str, np.ndarray],
     landmarks_data: dict,
-    draw_fn,  # draw_landmarks_manual 함수를 주입하세요: draw_fn(image_rgb, points, color)
     flip_before_draw: bool = True,
     left_color=(0, 255, 0),
     right_color=(255, 0, 0),
@@ -244,11 +238,11 @@ def annotate_landmarks_image(
 
     # 5) 랜드마크 그리기 (사용자 제공 draw_landmarks_manual 사용)
     if left_points:
-        annotated = draw_fn(annotated, left_points,  left_color)
+        annotated = draw_landmarks_manual(annotated, left_points,  left_color)
     if right_points:
-        annotated = draw_fn(annotated, right_points, right_color)
+        annotated = draw_landmarks_manual(annotated, right_points, right_color)
     if face_points:
-        annotated = draw_fn(annotated, face_points, face_color)
+        annotated = draw_landmarks_manual(annotated, face_points, face_color)
 
     # 6) BGR로 되돌리고, (옵션) 다시 좌우 반전해서 원본 좌표계와 정렬
     final_bgr = cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
@@ -259,11 +253,14 @@ def annotate_landmarks_image(
 
 
 if __name__ == "__main__":
-    test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\easy_test.jpg'
+    test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\test.jpg'
     result_image_path = r'./data/images/easy_test_result.jpg'
     
     # TEST 1
     landmarks_data = get_landmarks(test_image_path)
+    result = flatten_landmarks(landmarks_data)
+    print(result)
+    print(len(result))
     
     original_image = cv2.imread(test_image_path)
     if original_image is None:
@@ -278,7 +275,6 @@ if __name__ == "__main__":
     result_image = annotate_landmarks_image(
         test_image_path,
         landmarks_data,
-        draw_fn=draw_landmarks_manual,
         flip_before_draw=True
     )
     
