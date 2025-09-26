@@ -1,9 +1,4 @@
 import os
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"        # TF: ERROR만
-os.environ["GLOG_minloglevel"] = "3"            # glog: FATAL만
-os.environ["ABSL_LOG_SEVERITY_THRESHOLD"] = "3" # absl: FATAL만
-
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -21,6 +16,31 @@ HANDEDNESS_TEXT_COLOR = (88, 205, 54)
 # 모델 경로 정의
 HAND_MODEL_PATH = r'./utils/landmarker_tasks/hand_landmarker.task'
 POSE_MODEL_PATH = r'./utils/landmarker_tasks/pose_landmarker_full.task'
+
+# 미디어 파이프 설정
+BaseOptions = mp.tasks.BaseOptions
+VisionRunningMode = mp.tasks.vision.RunningMode
+
+HandLandmarker = mp.tasks.vision.HandLandmarker
+HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+
+hand_options = HandLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path=HAND_MODEL_PATH),
+    running_mode=VisionRunningMode.IMAGE,
+num_hands=2,
+min_hand_detection_confidence=0.5,
+min_hand_presence_confidence=0.5,
+)
+
+PoseLandmarker = mp.tasks.vision.PoseLandmarker
+PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+pose_options = PoseLandmarkerOptions(
+    num_poses=1,
+    base_options=BaseOptions(
+        model_asset_path=POSE_MODEL_PATH),
+        running_mode=VisionRunningMode.IMAGE,
+        min_pose_detection_confidence=0.5,
+        min_pose_presence_confidence=0.5)
 
 def draw_landmarks_manual(image, landmarks_data, color):
     # Check if landmarks_data is a valid list
@@ -68,8 +88,22 @@ def draw_landmarks(image, landmarks_data, label, color):
 
     return annotated_image
 
-def flatten_landmarks(result_landmarks: dict) -> list:
-    return result_landmarks["Left"] + result_landmarks["Right"] + result_landmarks["Face"]
+def flatten_landmarks(result_landmarks: dict,
+                      hand_size: int = 42,
+                      face_size: int = 11) -> list:
+    left  = result_landmarks.get("Left",  [])
+    right = result_landmarks.get("Right", [])
+    face  = result_landmarks.get("Face",  [])
+
+    # 없을 경우 0으로 패딩
+    if not left:
+        left = [0.0] * hand_size
+    if not right:
+        right = [0.0] * hand_size
+    if not face:
+        face = [0.0] * face_size
+
+    return left + right + face
 
 def get_landmarks(image_path):
     result_landmarks = {"Left" : [], 'Right': [], "Face": []}
@@ -83,21 +117,9 @@ def get_landmarks(image_path):
     image = cv2.flip(image, 1)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-
-    # 미디어 파이프 기본 설정
-    BaseOptions = mp.tasks.BaseOptions
-    VisionRunningMode = mp.tasks.vision.RunningMode
     
     # 손 랜드마커
-    HandLandmarker = mp.tasks.vision.HandLandmarker
-    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-
-    options = HandLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path=HAND_MODEL_PATH),
-        running_mode=VisionRunningMode.IMAGE,
-        num_hands=2)
-
-    with HandLandmarker.create_from_options(options) as landmarker:
+    with HandLandmarker.create_from_options(hand_options) as landmarker:
         hand_landmarker_result = landmarker.detect(mp_image)
         
         for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
@@ -112,13 +134,7 @@ def get_landmarks(image_path):
                 result_landmarks['Right'].extend(landmarks)
 
     # 포즈 랜드마커
-    PoseLandmarker = mp.tasks.vision.PoseLandmarker
-    PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-    options = PoseLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path=POSE_MODEL_PATH),
-        running_mode=VisionRunningMode.IMAGE)
-        
-    with PoseLandmarker.create_from_options(options) as landmarker:
+    with PoseLandmarker.create_from_options(pose_options) as landmarker:
         pose_landmarker_result = landmarker.detect(mp_image)
         
         desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -160,19 +176,7 @@ def get_landmarks_from_base64(base64_string):
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
 
-    BaseOptions = mp.tasks.BaseOptions
-    VisionRunningMode = mp.tasks.vision.RunningMode
-
-    HandLandmarker = mp.tasks.vision.HandLandmarker
-    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-
-    options = HandLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path=HAND_MODEL_PATH),
-        running_mode=VisionRunningMode.IMAGE,
-        num_hands=2
-    )
-
-    with HandLandmarker.create_from_options(options) as landmarker:
+    with HandLandmarker.create_from_options(hand_options) as landmarker:
         hand_landmarker_result = landmarker.detect(mp_image)
         for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
             landmarks = []
@@ -185,14 +189,7 @@ def get_landmarks_from_base64(base64_string):
             elif hand_label == 'Right':
                 result_landmarks['Right'].extend(landmarks)
 
-    PoseLandmarker = mp.tasks.vision.PoseLandmarker
-    PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-    options = PoseLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path=POSE_MODEL_PATH),
-        running_mode=VisionRunningMode.IMAGE
-    )
-
-    with PoseLandmarker.create_from_options(options) as landmarker:
+    with PoseLandmarker.create_from_options(pose_options) as landmarker:
         pose_landmarker_result = landmarker.detect(mp_image)
         
         desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
