@@ -5,6 +5,7 @@ import csv
 import mediapipe as mp
 import pandas as pd
 from guide_box import draw_box
+from pandas.errors import EmptyDataError
 
 # current_dir = os.path.dirname(os.path.abspath(__file__))
 # project_root = 'C:\Potenup\Korean-Sign-Language-Project'
@@ -39,7 +40,7 @@ pose = mp_pose.Pose(
 ##############################################
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 # 저장할 데이터 설정 
-answer_label = 0 # 저장할 라벨을 적어주세요
+answer_label = 7 # 저장할 라벨을 적어주세요
 answer_text = (
     sign_code_df.loc[sign_code_df['label'] == answer_label, 'sign_text']
     .squeeze() if (sign_code_df['label'] == answer_label).any() else None
@@ -58,8 +59,12 @@ if not os.path.exists(file_path):
     with open(file_path, "w") as file:
         writer = csv.writer(file)
 else :
-    df = pd.read_csv(file_path)
-    count = len(df)
+    try:
+        df = pd.read_csv(file_path)
+        count = len(df)
+        print("파일 읽기 성공")
+    except EmptyDataError:
+        print("파일이 비어 있어서 읽을 수 없습니다.")
     print("========================================")
     print(f'{answer_text} 파일이 이미 존재합니다. 계속 진행해도 될까요? 괜찮으면 Y를 눌러주세요')
     print(f'괜찮으면 Y / 종료하려면 N 을 눌러주세요')
@@ -157,7 +162,7 @@ while True:
             result_landmarks['Right'] = [0] * 42
 
         key = cv2.waitKey(1) # ASCII 코드
-        if key == ord("s"):
+        if key == ord("s") or key == 32:
             result = [answer_label]
             result.extend(result_landmarks['Left'])
             result.extend(result_landmarks['Right'])
