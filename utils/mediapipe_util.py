@@ -101,8 +101,6 @@ def flatten_landmarks(result_landmarks: dict,
         left = [0.0] * hand_size
     if not right:
         right = [0.0] * hand_size
-    if not face:
-        face = [0.0] * face_size
 
     return left + right + face
 
@@ -255,11 +253,14 @@ def annotate_landmarks_image(
 
 
 if __name__ == "__main__":
-    test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\easy_test.jpg'
+    test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\test.jpg'
     result_image_path = r'./data/images/easy_test_result.jpg'
     
     # TEST 1
     landmarks_data = get_landmarks(test_image_path)
+    result = flatten_landmarks(landmarks_data)
+    print(result)
+    print(len(result))
     
     original_image = cv2.imread(test_image_path)
     if original_image is None:
