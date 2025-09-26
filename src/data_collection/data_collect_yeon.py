@@ -4,7 +4,7 @@ import os
 import csv 
 import mediapipe as mp
 import pandas as pd
-from guide_box import draw_box
+from guide_box_func import draw_box
 
 # current_dir = os.path.dirname(os.path.abspath(__file__))
 # project_root = 'C:\Potenup\Korean-Sign-Language-Project'
@@ -39,7 +39,7 @@ pose = mp_pose.Pose(
 ##############################################
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 # 저장할 데이터 설정 
-answer_label = 15 # 저장할 라벨을 적어주세요
+answer_label = 16 # 저장할 라벨을 적어주세요
 answer_text = (
     sign_code_df.loc[sign_code_df['label'] == answer_label, 'sign_text']
     .squeeze() if (sign_code_df['label'] == answer_label).any() else None

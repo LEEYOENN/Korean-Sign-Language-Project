@@ -3,7 +3,7 @@ import cv2
 import sys
 import time
 
-df = pandas.read_csv("C:/Users/user/potenup/Korean-Sign-Language-Project/data/guide_box.csv")
+df = pandas.read_csv("C:\Potenup\Korean-Sign-Language-Project\data\guide_box.csv")
 
 #print(df)
 
