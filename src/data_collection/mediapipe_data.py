@@ -7,9 +7,9 @@ import pandas as pd
 from guide_box import draw_box
 from pandas.errors import EmptyDataError
 
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# project_root = 'C:\Potenup\Korean-Sign-Language-Project'
-# sys.path.append(project_root)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from utils import mediapipe_util
 
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
 mp_hands = mp.solutions.hands
@@ -168,10 +168,7 @@ while True:
 
         key = cv2.waitKey(1) # ASCII 코드
         if key == ord("s") or key == 32:
-            result = [answer_label]
-            result.extend(result_landmarks['Left'])
-            result.extend(result_landmarks['Right'])
-            result.extend(result_landmarks['Face'])
+            result = mediapipe_util.flatten_landmarks(result_landmarks)
         
             with open(file_path, "a", newline="") as file:
                 writer = csv.writer(file)
