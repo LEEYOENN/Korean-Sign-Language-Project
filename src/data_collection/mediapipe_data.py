@@ -44,36 +44,45 @@ sign_code_df = pd.read_csv("./data/sign_code.csv")
 MAX_COUNT = 50
 
 # 저장할 데이터 설정 
-answer_label = 8 # 저장할 라벨을 적어주세요
-answer_text = (
-    sign_code_df.loc[sign_code_df['label'] == answer_label, 'sign_text']
-    .squeeze() if (sign_code_df['label'] == answer_label).any() else None
+ANSWER_LABEL = 0 # 저장할 라벨을 적어주세요
+ANSWER_TEXT = (
+    sign_code_df.loc[sign_code_df['label'] == ANSWER_LABEL, 'sign_text']
+    .squeeze() if (sign_code_df['label'] == ANSWER_LABEL).any() else None
 )
 print("========================================")
-print(f'{answer_text} 를 저장하기 시작합니다!')
+print(f'{ANSWER_TEXT} 를 저장하기 시작합니다!')
 print(f's/space 키를 누르면 저장됩니다!')
 print("========================================")
 
-file_path = f'./data/sign_data/sign_data_{answer_label}.csv'
+FOLDER_PATH = f'./data/sign_images/sign_images_{ANSWER_LABEL}'
+FILE_PATH = f'./data/sign_data/sign_data_{ANSWER_LABEL}.csv'
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 ##############################################
 
 count = 0
+
+# 폴더 없을 경우 생성
+os.makedirs(FOLDER_PATH, exist_ok=True)
+jpg_files = [f for f in os.listdir(FOLDER_PATH) if f.lower().endswith(".jpg")]
+image_count = len(jpg_files)
+
 # 파일이 없을 경우 생성
-if not os.path.exists(file_path):
-    with open(file_path, "w") as file:
+if not os.path.exists(FILE_PATH):
+    with open(FILE_PATH, "w") as file:
         writer = csv.writer(file)
 else :
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(FILE_PATH, header=None)
         count = len(df)
         print("파일 읽기 성공")
     except EmptyDataError:
         print("파일이 비어 있어서 읽을 수 없습니다.")
+
     print("========================================")
-    print(f'{answer_text} 파일이 이미 존재합니다. 계속 진행해도 될까요? 괜찮으면 Y를 눌러주세요')
+    print(f'{ANSWER_TEXT} 파일이 이미 존재합니다. 계속 진행해도 될까요? 괜찮으면 Y를 눌러주세요')
     print(f'괜찮으면 Y / 종료하려면 N 을 눌러주세요')
     print("========================================")
+    
     while True:
         key = input("계속하려면 y, 종료하려면 n 을 입력하세요: ").strip().lower()
         if key == "y":
@@ -82,11 +91,15 @@ else :
             exit()
 
     print("========================================")
-    print(f'{answer_text} 를 저장하기를 정말 시작합니다!')
+    print(f'{ANSWER_TEXT} 를 저장하기를 정말 시작합니다!')
     print("========================================")
 
-vcap = cv2.VideoCapture(0)
+print(image_count, count)
+if image_count != count:
+    print("이미지와 csv 갯수가 일치하지 않아요...")
+    exit()
 
+vcap = cv2.VideoCapture(0)
 
 while True:
     ret, frame = vcap.read()
@@ -96,8 +109,9 @@ while True:
     
     # 좌우반전
     frame = cv2.flip(frame, 1)
+    origin_frame = frame.copy()
 
-    draw_box(frame, guide_box_df, answer_label)
+    draw_box(frame, guide_box_df, ANSWER_LABEL)
 
     # 그리기 설정
     frame.flags.writeable = True
@@ -170,11 +184,14 @@ while True:
         if key == ord("s") or key == 32:
             result = mediapipe_util.flatten_landmarks(result_landmarks)
         
-            with open(file_path, "a", newline="") as file:
+            with open(FILE_PATH, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(result)
                 cv2.putText(frame, "Save Data!", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
 
+                cv2.imwrite(os.path.join(FOLDER_PATH, f"{ANSWER_LABEL}_{count}.jpg"), origin_frame)
+
+                print(f"이미지 저장 : {count + 1}/{MAX_COUNT}")
                 count += 1
                 print('CSV 저장 완료! ', count)
     
