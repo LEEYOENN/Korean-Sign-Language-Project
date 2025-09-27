@@ -16,6 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 from utils.guide_box import draw_box
 from utils.mediapipe_util import get_landmarks_file, flatten_landmarks
+import mediapipe as mp
 
 # box 데이터 프레임 불러오기``
 guide_box_df = pd.read_csv("./data/guide_box.csv")
@@ -32,8 +33,39 @@ ANSWER_TEXT = (
 )
 
 # 모델 불러오기
-MODEL_PATH = "./models/xgb_test_model.pkl"
+MODEL_PATH = "./models/xgb_num_model.pkl"
 model = joblib.load(MODEL_PATH)
+
+# mediapipe의 Hand Landmark 를 추출을 위한 옵션
+mp_hands = mp.solutions.hands
+mp_pose = mp.solutions.pose
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+
+def recolor_style_dict(style_dict, bgr):
+    """DrawingStyles(dict) 의 color만 변경한 복제본을 반환"""
+    new_dict = {}
+    for k, spec in style_dict.items():
+        # spec: mp_drawing.DrawingSpec
+        new_dict[k] = mp_drawing.DrawingSpec(
+            color=bgr,
+            thickness=spec.thickness,
+            circle_radius=spec.circle_radius
+        )
+    return new_dict
+
+# 기본 스타일 가져오기
+base_landmark_style = mp_drawing_styles.get_default_hand_landmarks_style()
+base_conn_style     = mp_drawing_styles.get_default_hand_connections_style()
+
+# 왼/오른손 스타일 만들기 (원하는 색으로 변경)
+left_landmark_styles  = recolor_style_dict(base_landmark_style, (0, 255, 0))   # 초록
+left_connection_styles= recolor_style_dict(base_conn_style,     (0, 180, 0))
+right_landmark_styles = recolor_style_dict(base_landmark_style, (255, 0, 0))   # 빨강
+right_connection_styles= recolor_style_dict(base_conn_style,    (180, 0, 0))
+
+HAND_COUNT = 21 * 3
+POSE_COUNT = 11 * 3
 
 vcap = cv2.VideoCapture(0)
 
@@ -48,28 +80,25 @@ while True:
     frame = cv2.flip(frame, 1)
     origin_frame = frame.copy()
     
-    draw_box(frame, guide_box_df, ANSWER_LABEL)
-
-    # quality=90
-    # params = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-    # _, buf = cv2.imencode('jpg', frame, params)
-    # b64 = base64.b64encode(buf).decode("utf-8")
-
-    # 랜드마크 추출
-    data = flatten_landmarks(get_landmarks_file(origin_frame))
-
-    data = np.reshape(data, (1, 106))
+    draw_box(frame, guide_box_df, ANSWER_LABEL)    
 
     # 예측
     if count > 25:
-        pred = model.predict(data)
-        print(pred)
+        # 랜드마크 추출
+        landmarks = get_landmarks_file(origin_frame)
+        if len(landmarks['Right']) > 0:
+            data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
+            data = np.reshape(data[63:63+63], (1, 63))
+            pred = model.predict(data)
+            print("=====================")
+            print(pred)
+            print("=====================")
 
-        cv2.putText(frame, f"predict: {pred[0]}", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
+            cv2.putText(frame, f"predict: {pred[0] + 1}", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
         
-        if count == 50:
+        if count == 100:
             count = 0
-    
+        
     count += 1
 
     # 화면 띄우기
