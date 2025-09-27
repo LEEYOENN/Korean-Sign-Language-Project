@@ -5,4 +5,7 @@ test.ipynb
 client_test.py
 client.py
 4_1.jpg
+
+# image data
 /data/sign_images
+/data/image
