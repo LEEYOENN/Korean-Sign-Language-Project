@@ -1,9 +1,7 @@
 *.pyc
 
-# 
-data/sign_images/
-
+# TEST
 test.ipynb
 client_test.py
 client.py
-src/app/main.py
+4_1.jpg
