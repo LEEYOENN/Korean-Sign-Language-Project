@@ -1,4 +1,4 @@
-# # uvicorn src.app.main:app --host 0.0.0.0 --port 8000
+# uvicorn src.app.main:app --host 0.0.0.0 --port 8000
 from fastapi import FastAPI, WebSocket
 from utils.mediapipe_util import get_landmarks_from_base64, flatten_landmarks
 from xgboost import XGBClassifier
@@ -16,35 +16,56 @@ model = joblib.load(MODEL_PATH)
 @app.websocket("/ws/socket")
 async def websocket(websocket: WebSocket):
     '''
-        Request  : {"images" : image_bytes, "sign_id" : sign_id}
-        Response : {"is_correct" : True/False, "sign_id" : sign_id, "code" : 200/400}
+        Request JSON: 
+            {
+                "images" : <base64_image_string>,
+                "sign_id" : <string>,
+                "action" : "end" | null
+            }
+        Response JSON: 
+            {
+                "is_correct" : true | false, 
+                "sign_id" : <string>, 
+                "code" : 200 | 400
+            }
     '''
+    
     await websocket.accept()
+    print("WebSocket 연결 시작")
 
     try:
-        # 메시지 수신
-        request_data = await websocket.receive_json()
-        print(request_data, type(request_data))
-        images_b64 = request_data.get("images")
-        sign_id = request_data.get("sign_id")
+        while True:
+            # 메시지 수신
+            request_data = await websocket.receive_json()
+            print(type(request_data))
 
-        if images_b64 is None or sign_id is None:
-            print("not images_b64")
-            await websocket.send_json({"is_correct": False, "sign_id": sign_id, "code": 400})
-            return
+            # 종료 조건 처리
+            action = request_data.get("action")
+            if action == "END":    
+                print("클라이언트 요청에 의해 WebSocket 종료")
+                await websocket.close()
+                return
 
-        print(f"images ::: {images_b64} / sign_id ::: {sign_id}")
+            images_b64 = request_data.get("images")
+            sign_id = request_data.get("sign_id")
 
-        if images_b64.startswith("data:image"):
-            images_b64 = images_b64.split(",")[1]
+            if images_b64 is None or sign_id is None:
+                print("images_b64 or sign_id is None")
+                await websocket.send_json({"is_correct": False, "sign_id": sign_id, "code": 400})
+                continue
 
-        # decoding + landmark 추출 + 전처리 + 예측
-        prediction = handle_prediction(images_b64)
+            print(f"sign_id ::: {sign_id}")
 
-        # 추론 결과와 sign_id 비교
-        is_correct = check_prediction_match(prediction, sign_id)
-    
-        await websocket.send_json({"is_correct" : is_correct, "sign_id" : sign_id, "code" : 200})
+            if images_b64.startswith("data:image"):
+                images_b64 = images_b64.split(",")[1]
+
+            # decoding + landmark 추출 + 전처리 + 예측
+            prediction = handle_prediction(images_b64)
+
+            # 추론 결과와 sign_id 비교
+            is_correct = check_prediction_match(prediction, sign_id)
+        
+            await websocket.send_json({"is_correct" : is_correct, "sign_id" : sign_id, "code" : 200})
 
     except Exception as e:
         print(f"[WebSocket Error] {e}")
