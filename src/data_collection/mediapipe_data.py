@@ -65,11 +65,14 @@ pose = mp_pose.Pose(
 guide_box_df = pd.read_csv("./data/guide_box.csv")
 sign_code_df = pd.read_csv("./data/sign_code.csv")
 
+SHOW_GUIDE_BOX = True
+SAVE_IMAGE = False
+
 # 저장할 이미지 갯수
 MAX_COUNT = 500
 
 # 저장할 데이터 설정 
-ANSWER_LABEL = 2 # 저장할 라벨을 적어주세요
+ANSWER_LABEL = 3 # 저장할 라벨을 적어주세요
 ANSWER_TEXT = (
     sign_code_df.loc[sign_code_df['label'] == ANSWER_LABEL, 'sign_text']
     .squeeze() if (sign_code_df['label'] == ANSWER_LABEL).any() else None
@@ -119,10 +122,10 @@ else :
     print(f'{ANSWER_TEXT} 를 저장하기를 정말 시작합니다!')
     print("========================================")
 
-print(image_count, count)
-if image_count != count:
-    print("이미지와 csv 갯수가 일치하지 않아요...")
-    exit()
+# print(image_count, count)
+# if image_count != count:
+#     print("이미지와 csv 갯수가 일치하지 않아요...")
+#     exit()
 
 vcap = cv2.VideoCapture(0)
 
@@ -136,7 +139,8 @@ while True:
     frame = cv2.flip(frame, 1)
     origin_frame = frame.copy()
 
-    draw_box(frame, guide_box_df, ANSWER_LABEL)
+    if SHOW_GUIDE_BOX:
+        draw_box(frame, guide_box_df, ANSWER_LABEL)
 
     # 그리기 설정
     frame.flags.writeable = True
@@ -227,11 +231,13 @@ while True:
             with open(FILE_PATH, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(result)
+                print(f"CSV 저장 : {count + 1}/{MAX_COUNT}")
                 cv2.putText(frame, "Save Data!", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
 
-                cv2.imwrite(os.path.join(FOLDER_PATH, f"{ANSWER_LABEL}_{count}.jpg"), origin_frame)
+                if SAVE_IMAGE:
+                    cv2.imwrite(os.path.join(FOLDER_PATH, f"{ANSWER_LABEL}_{count}.jpg"), origin_frame)
 
-                print(f"이미지 저장 : {count + 1}/{MAX_COUNT}")
+                    print(f"이미지 저장 : {count + 1}/{MAX_COUNT}")
                 count += 1
     
     # 화면 띄우기

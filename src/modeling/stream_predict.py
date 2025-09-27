@@ -16,6 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 from utils.guide_box import draw_box
 from utils.mediapipe_util import get_landmarks_file, flatten_landmarks
+from utils.angular_util import compute_joint_angles
 import mediapipe as mp
 
 # box 데이터 프레임 불러오기``
@@ -33,7 +34,7 @@ ANSWER_TEXT = (
 )
 
 # 모델 불러오기
-MODEL_PATH = "./models/xgb_num_model.pkl"
+MODEL_PATH = "./models/xgb_num_angle_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
@@ -87,8 +88,14 @@ while True:
         # 랜드마크 추출
         landmarks = get_landmarks_file(origin_frame)
         if len(landmarks['Right']) > 0:
-            data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
-            data = np.reshape(data[63:63+63], (1, 63))
+            # data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
+            # data = np.reshape(data[63:63+63], (1, 63))
+            
+            right_data = landmarks['Right']
+            data, _, _ = compute_joint_angles(right_data)
+            data = np.reshape(data, (1, 15))
+            print(data.shape)
+
             pred = model.predict(data)
             print("=====================")
             print(pred)
