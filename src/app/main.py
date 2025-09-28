@@ -11,7 +11,7 @@ import uuid
 app = FastAPI()
 
 # 설정
-MODEL_PATH = "./models/xgb_sample_angle_vector_model.pkl"
+MODEL_PATH = "./models/xgb_sample_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 @app.websocket("/ws/socket")
