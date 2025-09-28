@@ -1,6 +1,7 @@
 # uvicorn src.app.main:app --host 0.0.0.0 --port 8000
 from fastapi import FastAPI, WebSocket
-from utils.mediapipe_util import get_landmarks_from_base64, flatten_landmarks
+from utils.mediapipe_util import get_landmarks_from_base64, flatten_landmarks, get_landmarks_file
+from utils.angular_util import compute_connected_unit_vectors, compute_joint_angles, flatten_vectors
 from xgboost import XGBClassifier
 import base64
 import joblib
@@ -10,7 +11,7 @@ import uuid
 app = FastAPI()
 
 # 설정
-MODEL_PATH = "./models/xgb_test_model.pkl"
+MODEL_PATH = "./models/xgb_num_5_angle_vector_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 @app.websocket("/ws/socket")
@@ -44,7 +45,7 @@ async def websocket(websocket: WebSocket):
             if action == "end":
                 print("클라이언트 요청에 의해 WebSocket 종료")
                 await websocket.close()
-                return
+                break
 
             images_b64 = request_data.get("images")
             sign_id = request_data.get("sign_id")
@@ -113,9 +114,13 @@ def handle_prediction(image_base64: str) -> np.ndarray:
     if landmarks is None:
         raise ValueError("Failed to extract landmarks")
 
-    flattened = flatten_landmarks(landmarks)
-    input_data = np.reshape(flattened, (1, -1))
-    # input_data = np.reshape(flattened, (1, 106))
+    right_data = landmarks['Right']
+    angle, _, _ = compute_joint_angles(right_data)
+    vector, _ = compute_connected_unit_vectors(right_data)
+    vector = flatten_vectors(vector)
+    data = angle
+    data.extend(vector)
+    input_data = np.reshape(data, (1, -1))
 
     return model.predict(input_data)
 
