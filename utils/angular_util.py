@@ -29,6 +29,69 @@ def _safe_unit(v, eps=1e-8):
         return np.zeros_like(v), 0.0
     return v / n, n
 
+import numpy as np
+
+def flatten_vectors(vectors_dict, order=None, dim=3):
+    """
+    vectors_dict: {(i,j): [vx,vy,vz] 또는 np.array}
+    order      : [(i,j), ...]  # 고정 순서. 없으면 키 정렬 사용
+    dim        : 벡터 차원(기본 3)
+
+    return     : [vx,vy,vz, vx,vy,vz, ...]  # 길이 = len(order)*dim
+    """
+    if not vectors_dict:
+        return []
+
+    if order is None:
+        # (i,j) 튜플 기준 정렬 → 일관된 순서 보장
+        order = sorted(vectors_dict.keys())
+
+    flat = []
+    for key in order:
+        v = vectors_dict.get(key, None)
+        if v is None:
+            flat.extend([0.0] * dim)
+            continue
+
+        v = np.asarray(v, dtype=float).reshape(-1)
+        # pad / truncate
+        if v.size < dim:
+            v = np.concatenate([v, np.zeros(dim - v.size, dtype=float)])
+        elif v.size > dim:
+            v = v[:dim]
+
+        flat.extend(v.tolist())
+
+    return flat
+
+def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8):
+    """
+    연결된 랜드마크 쌍(손가락 체인)의 '단위벡터'만 계산.
+    - 입력: [x1,y1,z1, x2,y2,z2, ..., x21,y21,z21] (길이 63)
+    - 출력:
+        unit_vectors: {(i,j): np.ndarray([ux,uy,uz])}  # 크기=1의 방향벡터
+        order:        [(i,j), ...]                     # 체인 순서대로
+
+    주의: 두 점이 같아 벡터 길이가 eps 미만이면 [0,0,0]을 반환.
+    """
+    P = _to_xyz_array(flat_landmarks_63)  # (21,3)
+    unit_vectors = {}
+    order = []
+
+    for chain in FINGER_CHAINS.values():
+        for a, b in zip(chain[:-1], chain[1:]):
+            v = P[b] - P[a]                 # a->b
+            n = np.linalg.norm(v)
+            if n < eps:
+                u = np.zeros(3, dtype=float)
+            else:
+                u = v / n
+            unit_vectors[(a, b)] = u
+            order.append((a, b))
+
+    return unit_vectors, order
+
+
 def compute_connected_vectors(flat_landmarks_63):
     """
     1단계: 연결된 랜드마크 쌍(각 손가락 체인 기준)의 벡터를 계산.

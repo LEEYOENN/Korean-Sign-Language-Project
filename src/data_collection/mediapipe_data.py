@@ -36,7 +36,7 @@ base_conn_style     = mp_drawing_styles.get_default_hand_connections_style()
 # 왼/오른손 스타일 만들기 (원하는 색으로 변경)
 left_landmark_styles  = recolor_style_dict(base_landmark_style, (0, 255, 0))   # 초록
 left_connection_styles= recolor_style_dict(base_conn_style,     (0, 180, 0))
-right_landmark_styles = recolor_style_dict(base_landmark_style, (255, 0, 0))   # 빨강
+right_landmark_styles = recolor_style_dict(base_landmark_style, (255, 0, 0))   # 파랑
 right_connection_styles= recolor_style_dict(base_conn_style,    (180, 0, 0))
 
 HAND_COUNT = 21 * 3
@@ -48,15 +48,15 @@ hands = mp_hands.Hands(
 
     min_detection_confidence = 0.5, #감지 확률 0.5 이상만
     min_tracking_confidence = 0.75 # 트래킹 확률 0.5이상만
-)
+)                                                                                  
 
 pose = mp_pose.Pose(
     static_image_mode=False, 
     model_complexity=1,
     smooth_landmarks=True,
     enable_segmentation=False,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.7
+    min_detection_confidence=0.7,
+    min_tracking_confidence=0.3
 )
 
 ##############################################
@@ -71,8 +71,11 @@ SAVE_IMAGE = False
 # 저장할 이미지 갯수
 MAX_COUNT = 500
 
+COLUM_COUNT = 159
+
 # 저장할 데이터 설정 
-ANSWER_LABEL = 3 # 저장할 라벨을 적어주세요
+# 저장할 라벨을 적어주세요
+ANSWER_LABEL = 15
 ANSWER_TEXT = (
     sign_code_df.loc[sign_code_df['label'] == ANSWER_LABEL, 'sign_text']
     .squeeze() if (sign_code_df['label'] == ANSWER_LABEL).any() else None
@@ -98,10 +101,13 @@ image_count = len(jpg_files)
 if not os.path.exists(FILE_PATH):
     with open(FILE_PATH, "w") as file:
         writer = csv.writer(file)
+        colums = ['label']
+        colums.extend([i for i in range(COLUM_COUNT)])
+        writer.writerow(colums)
 else :
     try:
-        df = pd.read_csv(FILE_PATH, header=None)
-        count = len(df) - 1
+        df = pd.read_csv(FILE_PATH)
+        count = len(df)
         print("파일 읽기 성공")
     except EmptyDataError:
         print("파일이 비어 있어서 읽을 수 없습니다.")
@@ -249,6 +255,7 @@ while True:
         break
 
     if count >= MAX_COUNT:
+        print("모두 카운팅 완료!")
         break
 
 vcap.release()

@@ -16,7 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 from utils.guide_box import draw_box
 from utils.mediapipe_util import get_landmarks_file, flatten_landmarks
-from utils.angular_util import compute_joint_angles
+from utils.angular_util import compute_joint_angles, compute_connected_unit_vectors, flatten_vectors
 import mediapipe as mp
 
 # box 데이터 프레임 불러오기``
@@ -34,7 +34,7 @@ ANSWER_TEXT = (
 )
 
 # 모델 불러오기
-MODEL_PATH = "./models/xgb_num_angle_model.pkl"
+MODEL_PATH = "./models/xgb_sample_angle_vector_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 # mediapipe의 Hand Landmark 를 추출을 위한 옵션
@@ -69,6 +69,12 @@ HAND_COUNT = 21 * 3
 POSE_COUNT = 11 * 3
 
 vcap = cv2.VideoCapture(0)
+cv2.setUseOptimized(True)
+vcap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # 윈도우면 CAP_DSHOW가 딜레이 줄어듦
+vcap.set(cv2.CAP_PROP_BUFFERSIZE, 1)       # 버퍼 최소화(지원하는 카메라만)
+vcap.set(cv2.CAP_PROP_FRAME_WIDTH,  640)   # 캡처 해상도 낮추면 속도↑
+vcap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+vcap.set(cv2.CAP_PROP_FPS, 30)             # 요청값(보장X)
 
 count = 0
 while True:
@@ -87,14 +93,24 @@ while True:
     if count > 25:
         # 랜드마크 추출
         landmarks = get_landmarks_file(origin_frame)
-        if len(landmarks['Right']) > 0:
+        right_data = landmarks['Right']
+        face_data = landmarks['Face']
+        if len(right_data) == HAND_COUNT:
             # data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
             # data = np.reshape(data[63:63+63], (1, 63))
-            
-            right_data = landmarks['Right']
-            data, _, _ = compute_joint_angles(right_data)
-            data = np.reshape(data, (1, 15))
-            print(data.shape)
+
+            # data, _, _ = compute_joint_angles(right_data)
+            # data = np.reshape(data, (1, 15))
+            # print(data.shape)
+
+            angle, _, _ = compute_joint_angles(right_data)
+            vector, _ = compute_connected_unit_vectors(right_data)
+            vector = flatten_vectors(vector)
+            data = angle
+            data.extend(vector)
+            # data.extend(face_data[0:1])
+            length = len(data)
+            data = np.reshape(data, (1, length))
 
             pred = model.predict(data)
             print("=====================")
