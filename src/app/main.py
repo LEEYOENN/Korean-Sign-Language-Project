@@ -60,6 +60,17 @@ async def websocket(websocket: WebSocket):
             if images_b64.startswith("data:image"):
                 images_b64 = images_b64.split(",")[1]
 
+            # 손 확인 로직 추가
+            landmark_result = get_landmarks_from_base64(images_b64, include_z=True)
+            if len(landmark_result['Left']) == 0 and len(landmark_result['Right']) == 0:
+                print("손이 감지되지 않았습니다.")
+                await websocket.send_json({
+                    "is_correct": False,
+                    "sign_id": sign_id,
+                    "code": 400
+                })
+                continue
+
             # decoding + landmark 추출 + 전처리 + 예측
             prediction = handle_prediction(images_b64)
 
