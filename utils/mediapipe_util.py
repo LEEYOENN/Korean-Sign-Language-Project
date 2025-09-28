@@ -259,33 +259,46 @@ def annotate_landmarks_image(
 
     return final_bgr
 
-def get_landmark_data(landmarks: dict):
+from enum import Enum
+class LANDMARK_MODE(Enum):
+    POINT = 0
+    ANGLE = 1
+    ANGLE_VECTOR = 2
+    ANGLE_VECTOR_CURV = 3
+    ANGLE_VECTOR_CURV_FACE = 4
+
+
+def get_landmark_data(landmarks: dict, mode: LANDMARK_MODE = LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE):
     right_data = landmarks['Right']
     face_data = landmarks['Face']
-    # 포인트 좌표로만
-    # data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
-    # data = np.reshape(data, (1, -1))
     
-    # 손가락 각도로만
-    # data, _, _ = compute_joint_angles(right_data)
-    # data = np.reshape(data, (1, -1))
-    # print(data.shape)
-
-    # 손가락 각도, 벡터
-    # angle, _, _ = compute_joint_angles(right_data)
-    # vector, _ = compute_connected_unit_vectors(right_data)
-    # vector = flatten_vectors(vector)
-    # data = angle
-    # data.extend(vector)
-    # # data.extend(face_data[0:1])
-    # data = np.reshape(data, (1, -1))
-    
-    # 손가락 각도, 벡터, 얼굴과의 거리벡터
-    angle, _, _ = compute_joint_angles(right_data)
-    _, _, vector = compute_connected_unit_vectors(right_data, return_flat = True)
-    _, _, face_hand_vector = compute_face_hand_vectors(face_data, right_data)
-    data = angle + vector + face_hand_vector
-    data = np.reshape(data, (1, -1))
+    if mode == LANDMARK_MODE.POINT:
+        # 포인트 좌표로만
+        # data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
+        # data = np.reshape(data, (1, -1))
+        data = []
+        print("포인트 에러")
+    elif mode == LANDMARK_MODE.ANGLE:
+        # 손가락 각도로만
+        data, _, _ = compute_joint_angles(right_data)
+        data = np.reshape(data, (1, -1))
+        print(data.shape)
+    elif mode == LANDMARK_MODE.ANGLE_VECTOR: # 75
+        # 손가락 각도, 벡터
+        angle, _, _ = compute_joint_angles(right_data)
+        _, _, vector = compute_connected_unit_vectors(right_data, return_flat=True)
+        data = angle + vector
+        data = np.reshape(data, (1, -1))
+    elif mode == LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE:
+        # 손가락 각도, 벡터, 얼굴과의 거리벡터
+        angle, _, _ = compute_joint_angles(right_data)
+        _, _, vector = compute_connected_unit_vectors(right_data, return_flat = True)
+        _, _, face_hand_vector = compute_face_hand_vectors(face_data, right_data)
+        data = angle + vector + face_hand_vector
+        data = np.reshape(data, (1, -1))
+    else:
+        data = []
+        print("모드 에러")
 
     return data
 

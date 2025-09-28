@@ -65,7 +65,7 @@ def flatten_vectors(vectors_dict, order=None, dim=3):
 
     return flat
 
-def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8, return_flat=False):
+def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8, return_flat=False, exclude_fingers = ['curv']):
     """
     연결된 랜드마크 쌍(손가락 체인)의 '단위벡터'만 계산.
     - 입력: [x1,y1,z1, x2,y2,z2, ..., x21,y21,z21] (길이 63)
@@ -79,7 +79,9 @@ def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8, return_flat=Fals
     unit_vectors = {}
     order = []
 
-    for chain in FINGER_CHAINS.values():
+    for finger_name, chain in FINGER_CHAINS.items():
+        if finger_name in exclude_fingers:
+            continue
         for a, b in zip(chain[:-1], chain[1:]):
             v = P[b] - P[a]                 # a->b
             n = np.linalg.norm(v)
@@ -97,7 +99,7 @@ def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8, return_flat=Fals
         return unit_vectors, order
 
 
-def compute_connected_vectors(flat_landmarks_63):
+def compute_connected_vectors(flat_landmarks_63, exclude_fingers = ['curv']):
     """
     1단계: 연결된 랜드마크 쌍(각 손가락 체인 기준)의 벡터를 계산.
     반환:
@@ -108,7 +110,9 @@ def compute_connected_vectors(flat_landmarks_63):
     vectors_dict = {}
     order = []
 
-    for chain in FINGER_CHAINS.values():
+    for finger_name, chain in FINGER_CHAINS.items():
+        if finger_name in exclude_fingers:
+            continue
         for a, b in zip(chain[:-1], chain[1:]):
             v = P[b] - P[a]          # a->b
             vectors_dict[(a, b)] = v
@@ -116,7 +120,7 @@ def compute_connected_vectors(flat_landmarks_63):
 
     return vectors_dict, order
 
-def compute_joint_angles(flat_landmarks_63, angle_unit="deg"):
+def compute_joint_angles(flat_landmarks_63, angle_unit="deg", exclude_fingers = ['curv']):
     """
     2단계: 같은 체인에서 '연속된 벡터들' 사이의 각도를 계산.
     예) 체인 [0,1,2,3,4]이면, (0->1)∠(1->2), (1->2)∠(2->3), (2->3)∠(3->4)
@@ -131,7 +135,7 @@ def compute_joint_angles(flat_landmarks_63, angle_unit="deg"):
     angles_dict = {}
 
     for finger_name, chain in FINGER_CHAINS.items():
-        if finger_name == 'curv':
+        if finger_name in exclude_fingers:
             continue
         # 연속 세 점 (a, b, c) => 벡터 u=(a->b), v=(b->c), 관절은 b에서의 굽힘 각
         for a, b, c in zip(chain[:-2], chain[1:-1], chain[2:]):
