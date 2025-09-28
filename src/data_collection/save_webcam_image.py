@@ -18,7 +18,7 @@ sign_code_df = pd.read_csv("./data/sign_code.csv")
 MAX_COUNT = 50
 
 # 저장할 데이터 설정 
-answer_label = 20 # 저장할 라벨을 적어주세요
+answer_label = 0 # 저장할 라벨을 적어주세요
 answer_text = (
     sign_code_df.loc[sign_code_df['label'] == answer_label, 'sign_text']
     .squeeze() if (sign_code_df['label'] == answer_label).any() else None

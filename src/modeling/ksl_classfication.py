@@ -45,7 +45,7 @@ def test():
         print(f"오류: 랜드마크 개수가 모델의 피처 수 106과 일치하지 않습니다.")
         print(f"랜드마크 개수: {len(result)}")
     
-    features_array = np.array(result).reshape(1, -1)
+    features_array = np.array(result).reshape(1, -1)[:,42:85]
 
     # 4. 모델의 예측 수행
     prediction = model.predict(features_array)
