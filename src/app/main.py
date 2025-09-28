@@ -1,6 +1,6 @@
 # uvicorn src.app.main:app --host 0.0.0.0 --port 8000
 from fastapi import FastAPI, WebSocket
-from utils.mediapipe_util import get_landmarks_from_base64, get_landmark_data
+from utils.mediapipe_util import get_landmarks_from_base64, get_landmark_data, LANDMARK_MODE
 from starlette.websockets import WebSocketState, WebSocketDisconnect
 from xgboost import XGBClassifier
 import base64
@@ -11,7 +11,7 @@ import uuid
 app = FastAPI()
 
 # 설정
-MODEL_PATH = "./models/xgb_sample_model.pkl"
+MODEL_PATH = "./models/xgb_num_7_angle_vector_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 @app.websocket("/ws/socket")
@@ -133,7 +133,7 @@ def handle_prediction(image_base64: str) -> np.ndarray:
     if landmarks is None:
         raise ValueError("Failed to extract landmarks")
     
-    data = get_landmark_data(landmarks)
+    data = get_landmark_data(landmarks, LANDMARK_MODE = LANDMARK_MODE.ANGLE_VECTOR)
     pred = model.predict(data)
 
     print(f"pred ::: {pred}")
