@@ -15,21 +15,21 @@ from utils import mediapipe_util
 ##############################################
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 # 저장할 데이터 설정 
-answer_label = 20
+ANSWER_LABEL = 20
 
-file_path = f'./data/sign_images/sign_images_{answer_label}'
-csv_path = f'./data/sign_data/sign_data_{answer_label}.csv'
+FILE_PATH = f'./data/sign_images/sign_images_{ANSWER_LABEL}'
+CSV_PATH = f'./data/sign_data/sign_data_{ANSWER_LABEL}.csv'
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 ##############################################
 
 count = 0
 # 파일이 없을 경우 생성
-if not os.path.exists(file_path):
-    with open(file_path, "w") as file:
+if not os.path.exists(FILE_PATH):
+    with open(FILE_PATH, "w") as file:
         writer = csv.writer(file)
 else :
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(FILE_PATH)
         count = len(df)
     except:
         count = 0
@@ -38,7 +38,7 @@ else :
 exts = ("*.jpg", "*.jpeg", "*.png", "*.bmp")
 files = []
 for e in exts:
-    files.extend(glob.glob(os.path.join(file_path, e)))
+    files.extend(glob.glob(os.path.join(FILE_PATH, e)))
 files.sort()
 
 if not files:
@@ -58,7 +58,6 @@ for idx, path in enumerate(files, 1):
     result_image = mediapipe_util.annotate_landmarks_image(
         path,
         landmarks_data,
-        draw_fn=mediapipe_util.draw_landmarks_manual,
         flip_before_draw=True
     )
     cv2.imshow(win_name, result_image)
@@ -69,8 +68,8 @@ for idx, path in enumerate(files, 1):
         if key == ord('s'):
             # 저장 후 다음 이미지로 넘어가
             # csv 저장하기
-            with open(csv_path, "a", newline="") as file:
-                result = [answer_label]
+            with open(CSV_PATH, "a", newline="") as file:
+                result = [ANSWER_LABEL]
                 result.extend(mediapipe_util.flatten_landmarks(landmarks_data))
 
                 writer = csv.writer(file)

@@ -25,7 +25,7 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 HandLandmarker = mp.tasks.vision.HandLandmarker
 HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
 
-hand_options = HandLandmarkerOptions(
+HAND_OPTIONS = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=HAND_MODEL_PATH),
     running_mode=VisionRunningMode.IMAGE,
 num_hands=2,
@@ -35,7 +35,7 @@ min_hand_presence_confidence=0.5,
 
 PoseLandmarker = mp.tasks.vision.PoseLandmarker
 PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-pose_options = PoseLandmarkerOptions(
+POSE_OPTIONS = PoseLandmarkerOptions(
     num_poses=1,
     base_options=BaseOptions(
         model_asset_path=POSE_MODEL_PATH),
@@ -90,8 +90,8 @@ def draw_landmarks(image, landmarks_data, label, color):
     return annotated_image
 
 def flatten_landmarks(result_landmarks: dict,
-                      hand_size: int = 42,
-                      face_size: int = 22) -> list:
+                      hand_size: int = 63,
+                      face_size: int = 33) -> list:
     left  = result_landmarks.get("Left",  [])
     right = result_landmarks.get("Right", [])
     face  = result_landmarks.get("Face",  [])
@@ -101,51 +101,98 @@ def flatten_landmarks(result_landmarks: dict,
         left = [0.0] * hand_size
     if not right:
         right = [0.0] * hand_size
+    if not face:
+        face = [0.0] * face_size
 
     return left + right + face
 
-def get_landmarks(image_path):
-    result_landmarks = {"Left" : [], 'Right': [], "Face": []}
+def _empty_result():
+    return {"Left": [], "Right": [], "Face": []}
 
-    # 이미지 불러오기
-    image = cv2.imread(image_path)
-    if image is None:
-        print(f"Error: Could not load image from {image_path}")
-        return result_landmarks
-        
-    image = cv2.flip(image, 1)
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-    
-    # 손 랜드마커
-    with HandLandmarker.create_from_options(hand_options) as landmarker:
-        hand_landmarker_result = landmarker.detect(mp_image)
-        
-        for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
-            landmarks = []
-            for landmark in hand_landmarks:
-                landmarks.extend([landmark.x, landmark.y])
-            
-            hand_label = handedness[0].category_name
-            if hand_label == 'Left':
-                result_landmarks['Left'].extend(landmarks)
-            elif hand_label == 'Right':
-                result_landmarks['Right'].extend(landmarks)
+def _to_mp_image(image_bgr, flip=True):
+    if image_bgr is None:
+        return None
+    if flip:
+        image_bgr = cv2.flip(image_bgr, 1)
+    rgb_image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    return mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
 
-    # 포즈 랜드마커
-    with PoseLandmarker.create_from_options(pose_options) as landmarker:
-        pose_landmarker_result = landmarker.detect(mp_image)
-        
+def _detect_landmarks_core(mp_image, include_z=False, desired_pose_landmarks=None):
+    """
+    mp_image: mp.Image (RGB, SRGB)
+    include_z: True면 [x,y,z], False면 [x,y]
+    desired_pose_landmarks: 포즈에서 저장할 인덱스 리스트 (기본 0~10)
+    """
+    if mp_image is None:
+        return _empty_result()
+
+    if desired_pose_landmarks is None:
         desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        if pose_landmarker_result.pose_landmarks:
-            landmarks_to_save = []
-            for idx, landmark in enumerate(pose_landmarker_result.pose_landmarks[0]):
+
+    result = _empty_result()
+
+    # --- 손 랜드마커 ---
+    with HandLandmarker.create_from_options(HAND_OPTIONS) as landmarker:
+        hand_res = landmarker.detect(mp_image)
+        # 손이 없을 수도 있음
+        for hand_lms, handedness in zip(hand_res.hand_landmarks, hand_res.handedness):
+            coords = []
+            for lm in hand_lms:
+                if include_z:
+                    coords.extend([lm.x, lm.y, lm.z])
+                else:
+                    coords.extend([lm.x, lm.y])
+
+            label = handedness[0].category_name  # 'Left' or 'Right'
+            if label == 'Left':
+                result['Left'].extend(coords)
+            elif label == 'Right':
+                result['Right'].extend(coords)
+
+    # --- 포즈 랜드마커 (얼굴/상체 일부) ---
+    with PoseLandmarker.create_from_options(POSE_OPTIONS) as landmarker:
+        pose_res = landmarker.detect(mp_image)
+        if pose_res.pose_landmarks:
+            face_coords = []
+            for idx, lm in enumerate(pose_res.pose_landmarks[0]):
                 if idx in desired_pose_landmarks:
-                    landmarks_to_save.extend([landmark.x, landmark.y])
-            result_landmarks['Face'] = landmarks_to_save
+                    if include_z:
+                        face_coords.extend([lm.x, lm.y, lm.z])
+                    else:
+                        face_coords.extend([lm.x, lm.y])
+            result['Face'] = face_coords
 
-    return result_landmarks
+    return result
 
+# 랜드마크 추출
+def get_landmarks(image_path, include_z = True):
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"Error: Could not load image from {image_path}")
+        return _empty_result()
+    mp_image = _to_mp_image(img, flip=True)
+    return _detect_landmarks_core(mp_image, include_z=include_z)
+
+def get_landmarks_file(image, include_z = True):
+    mp_image = _to_mp_image(image, flip=True)
+    return _detect_landmarks_core(mp_image, include_z=include_z)
+
+def get_landmarks_from_base64(base64_string, include_z = True):
+    try:
+        image_bytes = base64.b64decode(base64_string)
+        np_arr = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if img is None:
+            print("Error: Could not decode Base64 image.")
+            return _empty_result()
+    except Exception as e:
+        print(f"Error decoding Base64 string: {e}")
+        return _empty_result()
+
+    mp_image = _to_mp_image(img, flip=True)
+    return _detect_landmarks_core(mp_image, include_z=include_z)
+
+# 폴더 내 모든 랜드마크 추출
 def get_all_landmarks(folder_path):
     results = []
     
@@ -156,50 +203,6 @@ def get_all_landmarks(folder_path):
         results.append(landmarks)
     
     return results
-
-def get_landmarks_from_base64(base64_string):
-    result_landmarks = {"Left": [], 'Right': [], "Face": []}
-
-    try:
-        image_bytes = base64.b64decode(base64_string)
-        np_arr = np.frombuffer(image_bytes, np.uint8)
-        image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        if image is None:
-            print("Error: Could not decode Base64 image.")
-            return result_landmarks
-    except Exception as e:
-        print(f"Error decoding Base64 string: {e}")
-        return result_landmarks
-    
-    image = cv2.flip(image, 1)
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-
-    with HandLandmarker.create_from_options(hand_options) as landmarker:
-        hand_landmarker_result = landmarker.detect(mp_image)
-        for hand_landmarks, handedness in zip(hand_landmarker_result.hand_landmarks, hand_landmarker_result.handedness):
-            landmarks = []
-            for landmark in hand_landmarks:
-                landmarks.extend([landmark.x, landmark.y])
-            
-            hand_label = handedness[0].category_name
-            if hand_label == 'Left':
-                result_landmarks['Left'].extend(landmarks)
-            elif hand_label == 'Right':
-                result_landmarks['Right'].extend(landmarks)
-
-    with PoseLandmarker.create_from_options(pose_options) as landmarker:
-        pose_landmarker_result = landmarker.detect(mp_image)
-        
-        desired_pose_landmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        if pose_landmarker_result.pose_landmarks:
-            landmarks_to_save = []
-            for idx, landmark in enumerate(pose_landmarker_result.pose_landmarks[0]):
-                if idx in desired_pose_landmarks:
-                    landmarks_to_save.extend([landmark.x, landmark.y])
-            result_landmarks['Face'] = landmarks_to_save
-
-    return result_landmarks
 
 def annotate_landmarks_image(
     image_or_path: Union[str, np.ndarray],
