@@ -15,11 +15,10 @@ guide_box_df = pd.read_csv("./data/guide_box.csv")
 sign_code_df = pd.read_csv("./data/sign_code.csv")
 
 # 저장할 이미지 갯수
-MAX_COUNT = 50
+MAX_COUNT = 300
 
 # 저장할 데이터 설정 
-
-ANSWER_LABEL = 0 # 저장할 라벨을 적어주세요
+ANSWER_LABEL = 15 # 저장할 라벨을 적어주세요
 ANSWER_TEXT = (
     sign_code_df.loc[sign_code_df['label'] == ANSWER_LABEL, 'sign_text']
     .squeeze() if (sign_code_df['label'] == ANSWER_LABEL).any() else None

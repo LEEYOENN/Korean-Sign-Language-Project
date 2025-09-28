@@ -14,14 +14,15 @@ FINGER_CHAINS = {
     "middle": [0, 9,10,11,12],
     "ring":   [0,13,14,15,16],
     "pinky":  [0,17,18,19,20],
+    "curv":   [2, 5, 9,13,17]
 }
 
-def _to_xyz_array(flat_landmarks_63):
+def _to_xyz_array(flat_landmarks, length = 63, dim = 3):
     """[x1,y1,z1,...] -> (21,3) numpy array"""
-    arr = np.asarray(flat_landmarks_63, dtype=float)
-    if arr.shape[0] != 63:
-        raise ValueError("랜드마크 길이는 63이어야 합니다. (21점 x 3좌표)")
-    return arr.reshape(21, 3)
+    arr = np.asarray(flat_landmarks, dtype=float)
+    if arr.shape[0] != length:
+        raise ValueError(f"랜드마크 길이는 {length}이어야 합니다. ({length/dim}점 x 3좌표)")
+    return arr.reshape(int(length/dim), dim)
 
 def _safe_unit(v, eps=1e-8):
     n = np.linalg.norm(v)
@@ -64,7 +65,7 @@ def flatten_vectors(vectors_dict, order=None, dim=3):
 
     return flat
 
-def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8):
+def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8, return_flat=False):
     """
     연결된 랜드마크 쌍(손가락 체인)의 '단위벡터'만 계산.
     - 입력: [x1,y1,z1, x2,y2,z2, ..., x21,y21,z21] (길이 63)
@@ -88,8 +89,12 @@ def compute_connected_unit_vectors(flat_landmarks_63, eps=1e-8):
                 u = v / n
             unit_vectors[(a, b)] = u
             order.append((a, b))
-
-    return unit_vectors, order
+    
+    if return_flat:
+        flat = flatten_vectors(unit_vectors)
+        return unit_vectors, order, flat
+    else:
+        return unit_vectors, order
 
 
 def compute_connected_vectors(flat_landmarks_63):
@@ -126,6 +131,8 @@ def compute_joint_angles(flat_landmarks_63, angle_unit="deg"):
     angles_dict = {}
 
     for finger_name, chain in FINGER_CHAINS.items():
+        if finger_name == 'curv':
+            continue
         # 연속 세 점 (a, b, c) => 벡터 u=(a->b), v=(b->c), 관절은 b에서의 굽힘 각
         for a, b, c in zip(chain[:-2], chain[1:-1], chain[2:]):
             u = P[b] - P[a]
@@ -177,3 +184,76 @@ def compute_hand_features(flat_landmarks_63, angle_unit="deg"):
         "angles_list": angles_list,
         "angles_info": angles_info,
     }
+
+
+FACE_IDS = {
+    "nose": 0,
+    "left_eye": 2,
+    "right_eye": 5,
+    "mouth_left": 9,
+    "mouth_right": 10,
+}
+DEFAULT_FACE_ANCHORS = ["nose", "eye_center", "mouth_center"]
+DEFAULT_HAND_POINTS = [0, 4, 8, 12, 16, 20]  # wrist + five tips
+
+def _build_face_anchors(face_xyz):
+    """
+    face_xyz: (>=11, 3) 를 기대. (0..10) 중 필요한 인덱스 사용.
+    반환: dict 이름->(3,)
+    """
+    anchors = {}
+    # 개별 포인트 존재 가정(사전 체크는 생략했지만 필요하면 인덱스 범위 검사 추가)
+    nose = face_xyz[FACE_IDS["nose"]]
+    le   = face_xyz[FACE_IDS["left_eye"]]
+    re   = face_xyz[FACE_IDS["right_eye"]]
+    ml   = face_xyz[FACE_IDS["mouth_left"]]
+    mr   = face_xyz[FACE_IDS["mouth_right"]]
+
+    anchors["nose"]         = nose
+    anchors["eye_center"]   = (le + re) * 0.5
+    anchors["mouth_center"] = (ml + mr) * 0.5
+    return anchors
+
+def compute_face_hand_vectors(
+    face_flat,
+    hand_flat,
+    face_anchor_names=DEFAULT_FACE_ANCHORS,
+    hand_indices=DEFAULT_HAND_POINTS,
+    return_flat=True,
+):
+    """
+    얼굴 앵커(코, 눈중심, 입중심)와 손 포인트(손목+5손끝) 사이의 벡터 계산.
+    - 벡터 정의: anchor -> hand_point  (hand - anchor)
+    - 입력: face_flat, hand_flat : [x,y,(z)]*N 형태
+    - 출력:
+        unit_vecs: {(anchor_name, hand_idx): np.array([ux,uy,uz])}
+        order    : [(anchor_name, hand_idx), ...]
+        flat     : [ux,uy,uz, ux,uy,uz, ...] (옵션)
+    """
+    face_xyz = _to_xyz_array(face_flat, length=33)
+    hand_xyz = _to_xyz_array(hand_flat)
+
+    # 얼굴 앵커 산출(코/눈중심/입중심)
+    face_anchors = _build_face_anchors(face_xyz)
+
+    vectors = {}
+    order = []
+
+    # 고정 순서: face_anchor_names 순회 → hand_indices 오름차순
+    for an in face_anchor_names:
+        a = face_anchors[an]
+        for h_idx in hand_indices:
+            if h_idx >= hand_xyz.shape[0]:
+                # 손 랜드마크가 부족하면 0벡터
+                u = np.zeros(3, dtype=float)
+            else:
+                v = hand_xyz[h_idx] - a
+                # u_hat, nu = _safe_unit(u)
+            vectors[(an, h_idx)] = v
+            order.append((an, h_idx))
+
+    if return_flat:
+        flat = flatten_vectors(vectors)
+        return vectors, order, flat
+    else:
+        return vectors, order

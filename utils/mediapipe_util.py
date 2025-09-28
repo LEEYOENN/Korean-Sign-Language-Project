@@ -7,6 +7,11 @@ from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 import glob
 from typing import Union
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from utils.angular_util import compute_joint_angles, compute_connected_unit_vectors, flatten_vectors, compute_face_hand_vectors
 
 # 상수 정의
 MARGIN = 10 
@@ -233,7 +238,7 @@ def annotate_landmarks_image(
 
     # 4) (x,y) 점 리스트로 변환
     def to_points(vals):
-        return [(vals[i], vals[i+1]) for i in range(0, len(vals), 2)]
+        return [(vals[i], vals[i+1]) for i in range(0, len(vals), 3)]
 
     left_points  = to_points(left_vals)
     right_points = to_points(right_vals)
@@ -254,6 +259,35 @@ def annotate_landmarks_image(
 
     return final_bgr
 
+def get_landmark_data(landmarks: dict):
+    right_data = landmarks['Right']
+    face_data = landmarks['Face']
+    # 포인트 좌표로만
+    # data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
+    # data = np.reshape(data, (1, -1))
+    
+    # 손가락 각도로만
+    # data, _, _ = compute_joint_angles(right_data)
+    # data = np.reshape(data, (1, -1))
+    # print(data.shape)
+
+    # 손가락 각도, 벡터
+    # angle, _, _ = compute_joint_angles(right_data)
+    # vector, _ = compute_connected_unit_vectors(right_data)
+    # vector = flatten_vectors(vector)
+    # data = angle
+    # data.extend(vector)
+    # # data.extend(face_data[0:1])
+    # data = np.reshape(data, (1, -1))
+    
+    # 손가락 각도, 벡터, 얼굴과의 거리벡터
+    angle, _, _ = compute_joint_angles(right_data)
+    _, _, vector = compute_connected_unit_vectors(right_data, return_flat = True)
+    _, _, face_hand_vector = compute_face_hand_vectors(face_data, right_data)
+    data = angle + vector + face_hand_vector
+    data = np.reshape(data, (1, -1))
+
+    return data
 
 if __name__ == "__main__":
     test_image_path = r'C:\\Potenup\\Korean-Sign-Language-Project\data\\images\\test.jpg'
