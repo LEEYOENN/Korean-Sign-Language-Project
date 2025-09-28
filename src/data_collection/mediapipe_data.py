@@ -238,7 +238,7 @@ while True:
                 writer = csv.writer(file)
                 writer.writerow(result)
                 print(f"CSV 저장 : {count + 1}/{MAX_COUNT}")
-                cv2.putText(frame, "Save Data!", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
+                cv2.putText(frame, "Save Data!", (width - 100, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
 
                 if SAVE_IMAGE:
                     cv2.imwrite(os.path.join(FOLDER_PATH, f"{ANSWER_LABEL}_{count}.jpg"), origin_frame)

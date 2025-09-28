@@ -15,25 +15,30 @@ from utils import mediapipe_util
 ##############################################
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 # 저장할 데이터 설정 
-ANSWER_LABEL = 20
+ANSWER_LABEL = 15
+
+COLUM_COUNT = 159
 
 FILE_PATH = f'./data/sign_images/sign_images_{ANSWER_LABEL}'
 CSV_PATH = f'./data/sign_data/sign_data_{ANSWER_LABEL}.csv'
 ######### 🚨 여기를 수정하면 됩니다! 🚨 ########
 ##############################################
 
+colums = ['label']
+colums.extend([i for i in range(COLUM_COUNT)])
+
 count = 0
 # 파일이 없을 경우 생성
-if not os.path.exists(FILE_PATH):
-    with open(FILE_PATH, "w") as file:
+if not os.path.exists(CSV_PATH):
+    with open(CSV_PATH, "w") as file:
         writer = csv.writer(file)
+        writer.writerow(colums)
 else :
     try:
-        df = pd.read_csv(FILE_PATH)
+        df = pd.read_csv(CSV_PATH)
         count = len(df)
     except:
         count = 0
-
 
 exts = ("*.jpg", "*.jpeg", "*.png", "*.bmp")
 files = []
@@ -46,6 +51,10 @@ if not files:
     exit()
 
 for idx, path in enumerate(files, 1):
+    if count > idx:
+        print("SKIP ", idx)
+        continue
+
     original_image = cv2.imread(path)
     if original_image is None:
         print(f"[SKIP] 로드 실패: {path}")
@@ -63,12 +72,13 @@ for idx, path in enumerate(files, 1):
     cv2.imshow(win_name, result_image)
 
     while True:
-        key = cv2.waitKey(1) & 0xFF
+        key = cv2.waitKey(1)
 
         if key == ord('s'):
             # 저장 후 다음 이미지로 넘어가
             # csv 저장하기
             with open(CSV_PATH, "a", newline="") as file:
+                
                 result = [ANSWER_LABEL]
                 result.extend(mediapipe_util.flatten_landmarks(landmarks_data))
 
