@@ -2,6 +2,7 @@
 from fastapi import FastAPI, WebSocket
 from utils.mediapipe_util import get_landmarks_from_base64, flatten_landmarks, get_landmarks_file
 from utils.angular_util import compute_connected_unit_vectors, compute_joint_angles, flatten_vectors
+from starlette.websockets import WebSocketState, WebSocketDisconnect
 from xgboost import XGBClassifier
 import base64
 import joblib
@@ -68,16 +69,24 @@ async def websocket(websocket: WebSocket):
         
             await websocket.send_json({"is_correct" : is_correct, "sign_id" : sign_id, "code" : 200})
 
+    except WebSocketDisconnect:
+        print("클라이언트가 WebSocket을 정상 종료했습니다.")
+
     except Exception as e:
         print(f"[WebSocket Error] {e}")
-        await websocket.send_json({
-            "is_correct": False,
-            "sign_id": None,
-            "code": 400
-        })
+        try:
+            if websocket.application_state != WebSocketState.DISCONNECTED:
+                await websocket.send_json({
+                    "is_correct": False,
+                    "sign_id": None,
+                    "code": 400
+                })
+        except RuntimeError as re:
+            print((f"[응답 실패] 이미 닫힌 상태 : {re}"))
     
     finally: 
-        await websocket.close()
+        if websocket.application_state != WebSocketState.DISCONNECTED:
+            await websocket.close()
         print("WebSocket 연결 종료")
 
 
