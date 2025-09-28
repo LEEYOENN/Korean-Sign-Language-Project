@@ -15,8 +15,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from utils.guide_box import draw_box
-from utils.mediapipe_util import get_landmarks_file, flatten_landmarks
-from utils.angular_util import compute_joint_angles, compute_connected_unit_vectors, flatten_vectors
+from utils.mediapipe_util import get_landmarks_file, get_landmark_data
 import mediapipe as mp
 
 # box 데이터 프레임 불러오기``
@@ -96,21 +95,26 @@ while True:
         right_data = landmarks['Right']
         face_data = landmarks['Face']
         if len(right_data) == HAND_COUNT:
+            # 포인트 좌표로만
             # data = flatten_landmarks(landmarks, hand_size=HAND_COUNT, face_size=POSE_COUNT)
-            # data = np.reshape(data[63:63+63], (1, 63))
-
+            # data = np.reshape(data, (1, -1))
+            
+            # 손가락 각도로만
             # data, _, _ = compute_joint_angles(right_data)
-            # data = np.reshape(data, (1, 15))
+            # data = np.reshape(data, (1, -1))
             # print(data.shape)
 
-            angle, _, _ = compute_joint_angles(right_data)
-            vector, _ = compute_connected_unit_vectors(right_data)
-            vector = flatten_vectors(vector)
-            data = angle
-            data.extend(vector)
-            # data.extend(face_data[0:1])
-            length = len(data)
-            data = np.reshape(data, (1, length))
+            # 손가락 각도와 벡터로
+            # angle, _, _ = compute_joint_angles(right_data)
+            # vector, _ = compute_connected_unit_vectors(right_data)
+            # vector = flatten_vectors(vector)
+            # data = angle
+            # data.extend(vector)
+            # # data.extend(face_data[0:1])
+            # data = np.reshape(data, (1, -1))
+
+            # 최종본
+            data = get_landmark_data(landmarks)
 
             pred = model.predict(data)
             print("=====================")
