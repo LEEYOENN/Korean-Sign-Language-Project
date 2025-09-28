@@ -29,7 +29,7 @@ async def websocket(websocket: WebSocket):
                 "code" : 200 | 400
             }
     '''
-    
+
     await websocket.accept()
     print("WebSocket 연결 시작")
 
@@ -41,7 +41,7 @@ async def websocket(websocket: WebSocket):
 
             # 종료 조건 처리
             action = request_data.get("action")
-            if action == "END":    
+            if action == "end":
                 print("클라이언트 요청에 의해 WebSocket 종료")
                 await websocket.close()
                 return
