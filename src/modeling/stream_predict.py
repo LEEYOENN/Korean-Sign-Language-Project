@@ -31,9 +31,9 @@ ANSWER_TEXT = (
     .squeeze() if (sign_code_df['label'] == ANSWER_LABEL).any() else None
 )
 
-ANSWER_TEXT_LIST = ['좋아요', '싫어요', '맞다', '틀리다']
-MODEL_PATH = "./models/xgb_like_hate_right_wrong_model.pkl"
-mode = LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE
+ANSWER_TEXT_LIST = [1, 2, 3, 4, 5, 6, 7, '좋아요', '싫어요', '맞다', '틀리다'] # ['좋아요', '싫어요', '맞다', '틀리다']]
+MODEL_PATH = "./models/xgb_sample_model.pkl"
+mode = LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE_NOSE_WRIST
 model = joblib.load(MODEL_PATH)
 
 mp_hands = mp.solutions.hands
