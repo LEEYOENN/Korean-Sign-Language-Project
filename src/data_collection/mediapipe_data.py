@@ -75,7 +75,7 @@ COLUM_COUNT = 159
 
 # 저장할 데이터 설정 
 # 저장할 라벨을 적어주세요
-ANSWER_LABEL = 16
+ANSWER_LABEL = 18
 ANSWER_TEXT = (
     sign_code_df.loc[sign_code_df['label'] == ANSWER_LABEL, 'sign_text']
     .squeeze() if (sign_code_df['label'] == ANSWER_LABEL).any() else None

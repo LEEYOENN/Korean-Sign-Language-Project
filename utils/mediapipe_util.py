@@ -266,6 +266,7 @@ class LANDMARK_MODE(Enum):
     ANGLE_VECTOR = 2
     ANGLE_VECTOR_CURV = 3
     ANGLE_VECTOR_CURV_FACE = 4
+    ANGLE_VECTOR_CURV_FACE_NOSE = 5
 
 
 def get_landmark_data(landmarks: dict, mode: LANDMARK_MODE = LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE):
@@ -292,8 +293,15 @@ def get_landmark_data(landmarks: dict, mode: LANDMARK_MODE = LANDMARK_MODE.ANGLE
     elif mode == LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE:
         # 손가락 각도, 벡터, 얼굴과의 거리벡터
         angle, _, _ = compute_joint_angles(right_data)
-        _, _, vector = compute_connected_unit_vectors(right_data, return_flat = True)
+        _, _, vector = compute_connected_unit_vectors(right_data, return_flat = True, exclude_fingers=[])
         _, _, face_hand_vector = compute_face_hand_vectors(face_data, right_data)
+        data = angle + vector + face_hand_vector
+        data = np.reshape(data, (1, -1))
+    elif mode == LANDMARK_MODE.ANGLE_VECTOR_CURV_FACE_NOSE:
+        # 손가락 각도, 벡터, 얼굴과의 거리벡터
+        angle, _, _ = compute_joint_angles(right_data)
+        _, _, vector = compute_connected_unit_vectors(right_data, return_flat = True, exclude_fingers=[])
+        _, _, face_hand_vector = compute_face_hand_vectors(face_data, right_data, face_anchor_names = ["nose"])
         data = angle + vector + face_hand_vector
         data = np.reshape(data, (1, -1))
     else:
