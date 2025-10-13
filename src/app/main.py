@@ -133,7 +133,7 @@ def handle_prediction(image_base64: str) -> np.ndarray:
     if landmarks is None:
         raise ValueError("Failed to extract landmarks")
     
-    data = get_landmark_data(landmarks, LANDMARK_MODE = LANDMARK_MODE.ANGLE_VECTOR)
+    data = get_landmark_data(landmarks, mode = LANDMARK_MODE.ANGLE_VECTOR)
     pred = model.predict(data)
 
     print(f"pred ::: {pred}")
