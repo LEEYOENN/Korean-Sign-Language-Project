@@ -46,7 +46,7 @@ hands = mp_hands.Hands(
     static_image_mode = False, #고정이미지 아님
     max_num_hands = 2,
 
-    min_detection_confidence = 0.4, #감지 확률 0.5 이상만
+    min_detection_confidence = 0.3, #감지 확률 0.5 이상만
     min_tracking_confidence = 0.75 # 트래킹 확률 0.5이상만
 )                                                                                  
 
@@ -238,7 +238,7 @@ while True:
                 writer = csv.writer(file)
                 writer.writerow(result)
                 print(f"CSV 저장 : {count + 1}/{MAX_COUNT}")
-                cv2.putText(frame, "Save", (width - 150, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
+                cv2.putText(frame, "Save Data!", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,0,0), 2)
 
                 if SAVE_IMAGE:
                     cv2.imwrite(os.path.join(FOLDER_PATH, f"{ANSWER_LABEL}_{count}.jpg"), origin_frame)
